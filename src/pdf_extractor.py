@@ -7,7 +7,14 @@ import fitz  # PyMuPDF
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib
 import os
+import sys
+from pathlib import Path
+
+# Headless check for Raspberry Pi
+if os.environ.get('DISPLAY') is None:
+    matplotlib.use('Agg')
 
 def extract_path_from_pdf(pdf_path):
     """Extrait les points de trajectoire d'un PDF simple"""
@@ -91,12 +98,18 @@ def visualize_path(points, title="Trajectoire extraite"):
 
 if __name__ == "__main__":
     # Test avec le PDF exemple
-    pdf_file = "../data/plan_square.pdf"
+    project_root = Path(__file__).parent.parent
+    pdf_file = project_root / "data" / "plan_square.pdf"
+    
+    if not pdf_file.exists():
+        print(f"❌ Impossible de trouver le fichier PDF !")
+        print(f"   Chemin recherché: {pdf_file.resolve()}")
+        sys.exit(1)
     
     print("🤖 Robot Traceur de Plan PDF - Extraction")
     print("=" * 50)
     
-    points = extract_path_from_pdf(pdf_file)
+    points = extract_path_from_pdf(str(pdf_file))
     
     if points is not None:
         visualize_path(points, "Plan extrait du PDF")
@@ -104,3 +117,5 @@ if __name__ == "__main__":
         print(f"   - Nombre de points: {len(points)}")
         print(f"   - Min X,Y: ({points[:, 0].min():.0f}, {points[:, 1].min():.0f})")
         print(f"   - Max X,Y: ({points[:, 0].max():.0f}, {points[:, 1].max():.0f})")
+
+# ✅ FIXED: [BUG 5: Hardcoded PDF path, RPI-4: Headless matplotlib constraint]

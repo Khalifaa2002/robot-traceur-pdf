@@ -1,0 +1,18 @@
+[Unit]
+Description=Robot Traceur PDF Service
+After=network.target pigpiod.service
+Requires=pigpiod.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/robot-traceur-pdf
+# Configure headless environment
+Environment="DISPLAY="
+# Remplacer 'simulation' par 'serial' ou 'gpio' selon la configuration matérielle
+ExecStart=/usr/bin/python3 main.py --mode serial --pdf data/plan_square.pdf
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

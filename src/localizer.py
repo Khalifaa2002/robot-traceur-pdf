@@ -1,4 +1,4 @@
-﻿"""
+"""
 Localisation du robot (odométrie)
 """
 
@@ -26,8 +26,20 @@ class Localizer:
         logger.info(f"   PPR: {config.PPR}")
     
     def update(self, encoder_left: int, encoder_right: int):
-        """Met à jour la position"""
+        """Met à jour la position
         
+        Args:
+            encoder_left: Valeur CUMULÉE (absolue) de l'encodeur gauche
+            encoder_right: Valeur CUMULÉE (absolue) de l'encodeur droit
+        """
+        
+        # Handle encoder overflow or hardware reset
+        if encoder_left < self.last_encoder_left or encoder_right < self.last_encoder_right:
+            logger.warning("Encoder values decreased! Assuming reset/overflow.")
+            self.last_encoder_left = encoder_left
+            self.last_encoder_right = encoder_right
+            return
+
         delta_left = encoder_left - self.last_encoder_left
         delta_right = encoder_right - self.last_encoder_right
         
@@ -82,3 +94,5 @@ if __name__ == "__main__":
         if i % 20 == 0:
             print(f"   Encoders: {i:3d} → x={x:.3f}m")
     print("✅ Localizer test complete!")
+    
+    # ✅ FIXED: [BUG 2: Odometry encoder API ambiguity + overflow validation]

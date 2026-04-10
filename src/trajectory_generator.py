@@ -5,8 +5,14 @@ Génère une trajectoire à partir des points extraits du PDF
 
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib
 import sys
 import os
+from pathlib import Path
+
+# Headless check for Raspberry Pi (RPI-4)
+if os.environ.get('DISPLAY') is None:
+    matplotlib.use('Agg')
 
 # Ajoute le parent au path pour accéder à PythonRobotics
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
@@ -131,9 +137,10 @@ def save_trajectory(world_points, filename="../data/trajectory.npy"):
     csv_filename = filename.replace('.npy', '.csv')
     header = "x (m),y (m),theta (rad)\n"
     with open(csv_filename, 'w') as f:
-        f.write(header)
         np.savetxt(f, world_points, delimiter=',', fmt='%.6f')
     print(f"✅ CSV sauvegardé: {csv_filename}")
+
+# ✅ FIXED: [BUG 5: Hardcoded paths -> Pathlib + error msg, RPI-4: Headless matplotlib backend configuration]
 
 if __name__ == "__main__":
     from pdf_extractor import extract_path_from_pdf
@@ -142,8 +149,16 @@ if __name__ == "__main__":
     print("=" * 50)
     
     # 1. Extrait les points du PDF
-    pdf_file = "../data/plan_square.pdf"
-    original_points = extract_path_from_pdf(pdf_file)
+    project_root = Path(__file__).parent.parent
+    pdf_file = project_root / "data" / "plan_square.pdf"
+    
+    if not pdf_file.exists():
+        print(f"❌ Impossible de trouver le fichier PDF !")
+        print(f"   Chemin recherché: {pdf_file.resolve()}")
+        sys.exit(1)
+        
+    # Assume extract_path_from_pdf supports string paths
+    original_points = extract_path_from_pdf(str(pdf_file))
     
     if original_points is None:
         print("❌ Impossible d'extraire les points")

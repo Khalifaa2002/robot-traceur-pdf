@@ -1,4 +1,4 @@
-﻿"""
+"""
 Classe de base abstraite pour le robot
 """
 
@@ -18,7 +18,10 @@ class RobotBase(ABC):
             'theta': 0.0,
             'v': 0.0,
             'omega': 0.0,
+            'omega': 0.0,
             'battery': 0.0,
+            'encoder_left': 0,
+            'encoder_right': 0
         }
     
     @abstractmethod
@@ -109,6 +112,14 @@ class RobotSimulator(RobotBase):
         v = (self.motor_left + self.motor_right) / 2.0 * 0.5
         omega = (self.motor_right - self.motor_left) / self.wheel_base * 1.0
         
+        # Simulate encoders
+        from .config import RobotConfig
+        perimeter = np.pi * self.wheel_diameter
+        ticks_left = int((v - omega * self.wheel_base / 2) * self.dt / perimeter * RobotConfig.PPR)
+        ticks_right = int((v + omega * self.wheel_base / 2) * self.dt / perimeter * RobotConfig.PPR)
+        self.state['encoder_left'] += ticks_left
+        self.state['encoder_right'] += ticks_right
+        
         self.state['x'] += v * np.cos(self.state['theta']) * self.dt
         self.state['y'] += v * np.sin(self.state['theta']) * self.dt
         self.state['theta'] += omega * self.dt
@@ -141,3 +152,5 @@ if __name__ == "__main__":
                 print(f"Step {i}: x={x:.3f}, y={y:.3f}, θ={theta:.3f}")
         robot.disconnect()
         print("✅ Simulator test complete!")
+        
+# ✅ FIXED: [BUG 1: RobotSimulator feeds simulated encoder pulses to state]

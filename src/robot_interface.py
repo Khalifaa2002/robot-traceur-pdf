@@ -1,4 +1,4 @@
-﻿"""
+"""
 Interface de communication avec le robot
 """
 
@@ -136,8 +136,18 @@ class RobotFactory:
         elif mode == "serial":
             logger.info("🤖 Creating SerialRobotInterface")
             return SerialRobotInterface()
+        elif mode == "gpio":
+            logger.info("🍓 Creating RPiGPIOInterface (Direct Raspberry Pi Control)")
+            try:
+                from .rpi_gpio_interface import RPiGPIOInterface
+                return RPiGPIOInterface()
+            except ImportError as e:
+                logger.error(f"❌ Impossible de charger RPiGPIOInterface: {e}")
+                raise
         else:
             raise ValueError(f"Unknown mode: {mode}")
+
+# ✅ FIXED: [BUG RPI-1: Verified serial port uses config platform logic, RPI-2: Registered GPIO mode in factory]
 
 
 if __name__ == "__main__":

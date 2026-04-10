@@ -1,10 +1,15 @@
-﻿"""
+"""
 Configuration globale du projet
 """
 
 import os
+import platform
 import numpy as np
 from pathlib import Path
+
+# ==================== ENVIRONMENT FLAGS ====================
+IS_RASPBERRY_PI = platform.machine() in ['armv7l', 'aarch64']
+IS_HEADLESS = os.environ.get('DISPLAY') is None
 
 # ==================== PATHS ====================
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -23,7 +28,7 @@ class RobotConfig:
     PPR = 20.0
     MAX_LINEAR_VELOCITY = 0.5
     MAX_ANGULAR_VELOCITY = 1.0
-    SERIAL_PORT = "COM3"
+    SERIAL_PORT = "COM3" if platform.system() == "Windows" else "/dev/ttyACM0"
     BAUDRATE = 115200
     TIMEOUT = 1.0
     ODOMETRY_UPDATE_RATE = 100
@@ -98,4 +103,9 @@ if __name__ == "__main__":
     print(f"   Wheel diameter: {RobotConfig.WHEEL_DIAMETER} m")
     print(f"   Wheel base: {RobotConfig.WHEEL_BASE} m")
     print(f"   PPR: {RobotConfig.PPR}")
+    print(f"   Platform: {'Raspberry Pi' if IS_RASPBERRY_PI else platform.system()}")
+    print(f"   Headless: {IS_HEADLESS}")
+    print(f"   Serial: {RobotConfig.SERIAL_PORT}")
     print("✅ Configuration loaded!")
+    
+    # ✅ FIXED: [RPI-1: Serial port path, RPI-5: Auto-detect running environment]

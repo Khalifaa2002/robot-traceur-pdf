@@ -11,14 +11,19 @@
 #define MOTOR_RIGHT_PWM 10
 #define MOTOR_LEFT_DIR 8
 #define MOTOR_RIGHT_DIR 7
-#define ENCODER_LEFT 2
-#define ENCODER_RIGHT 3
+#define ENCODER_LEFT_A 2
+#define ENCODER_LEFT_B 4
+#define ENCODER_RIGHT_A 3
+#define ENCODER_RIGHT_B 5
 
 // === VARIABLES GLOBALES ===
-volatile int encoder_left = 0;
-volatile int encoder_right = 0;
+volatile long encoder_left = 0;
+volatile long encoder_right = 0;
+long last_encoder_left = 0;
+long last_encoder_right = 0;
 float x = 0.0, y = 0.0, theta = 0.0;
 float v_cmd = 0.0, omega_cmd = 0.0;
+unsigned long last_cmd_time = 0;
 
 // === CONSTANTS ===
 const float WHEEL_DIAMETER = 0.065;  // 6.5 cm
@@ -35,30 +40,53 @@ void setup() {
   pinMode(MOTOR_RIGHT_PWM, OUTPUT);
   pinMode(MOTOR_LEFT_DIR, OUTPUT);
   pinMode(MOTOR_RIGHT_DIR, OUTPUT);
-  pinMode(ENCODER_LEFT, INPUT);
-  pinMode(ENCODER_RIGHT, INPUT);
+  pinMode(ENCODER_LEFT_A, INPUT_PULLUP);
+  pinMode(ENCODER_LEFT_B, INPUT_PULLUP);
+  pinMode(ENCODER_RIGHT_A, INPUT_PULLUP);
+  pinMode(ENCODER_RIGHT_B, INPUT_PULLUP);
   
-  // Attache les interruptions pour les encodeurs
-  attachInterrupt(digitalPinToInterrupt(ENCODER_LEFT), isr_encoder_left, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_RIGHT), isr_encoder_right, CHANGE);
+  // Attache les interruptions pour les encodeurs (RISING pour simplifier, x2 au lieu de x4 si CHANGE)
+  attachInterrupt(digitalPinToInterrupt(ENCODER_LEFT_A), isr_encoder_left, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_RIGHT_A), isr_encoder_right, CHANGE);
   
   Serial.println("{\"msg\":\"🤖 Robot Traceur démarré\"}");
 }
 
 // === ISRs (Interrupt Service Routines) ===
 void isr_encoder_left() {
-  encoder_left++;
+  if (digitalRead(ENCODER_LEFT_A) == digitalRead(ENCODER_LEFT_B)) {
+    encoder_left--;
+  } else {
+    encoder_left++;
+  }
 }
 
 void isr_encoder_right() {
-  encoder_right++;
+  if (digitalRead(ENCODER_RIGHT_A) == digitalRead(ENCODER_RIGHT_B)) {
+    encoder_right--;
+  } else {
+    encoder_right++;
+  }
 }
 
 // === ODOMÉTRIE ===
 void update_odometry() {
+  long curr_left, curr_right;
+  
+  // Safe atomic read of volatile variables
+  noInterrupts();
+  curr_left = encoder_left;
+  curr_right = encoder_right;
+  interrupts();
+  
+  long delta_left_ticks = curr_left - last_encoder_left;
+  long delta_right_ticks = curr_right - last_encoder_right;
+  last_encoder_left = curr_left;
+  last_encoder_right = curr_right;
+  
   // Convertit les pulses en distance
-  float dist_left = encoder_left / COUNTS_PER_METER;
-  float dist_right = encoder_right / COUNTS_PER_METER;
+  float dist_left = delta_left_ticks / COUNTS_PER_METER;
+  float dist_right = delta_right_ticks / COUNTS_PER_METER;
   float dist_avg = (dist_left + dist_right) / 2.0;
   float delta_theta = (dist_right - dist_left) / WHEEL_BASE;
   
@@ -66,10 +94,6 @@ void update_odometry() {
   x += dist_avg * cos(theta);
   y += dist_avg * sin(theta);
   theta += delta_theta;
-  
-  // Réinitialise les encodeurs
-  encoder_left = 0;
-  encoder_right = 0;
 }
 
 // === COMMANDE MOTEUR ===
@@ -124,16 +148,19 @@ void parse_command(String cmd) {
     float left_speed, right_speed;
     cmd_to_motor_speeds(v_cmd, omega_cmd, left_speed, right_speed);
     set_motor_speed(left_speed, right_speed);
+    last_cmd_time = millis(); // Reset watchdog
     
     Serial.println("{\"status\":\"motor\"}");
     
   } else if (command == "GOTO") {
     // Waypoint (simplifié: on envoi juste "reçu")
+    last_cmd_time = millis(); // Reset watchdog
     Serial.println("{\"status\":\"waypoint_received\"}");
   }
   
   else if (command == "STOP") {
     set_motor_speed(0, 0);
+    last_cmd_time = millis(); // Reset watchdog
     Serial.println("{\"status\":\"stopped\"}");
   }
 }
@@ -157,9 +184,18 @@ void send_state() {
   doc["theta"] = theta;
   doc["v"] = v_cmd;
   doc["omega"] = omega_cmd;
-  doc["encoder_left"] = encoder_left;
-  doc["encoder_right"] = encoder_right;
-  doc["battery"] = analogRead(A0) * 5.0 / 1023.0;  // Lecture ADC batterie
+  // Safe read for JSON payload
+  long copy_left, copy_right;
+  noInterrupts();
+  copy_left = encoder_left;
+  copy_right = encoder_right;
+  interrupts();
+  
+  doc["encoder_left"] = copy_left;
+  doc["encoder_right"] = copy_right;
+  
+  // Voltage divider (assuming R1=10k, R2=4.7k -> Factor ~ 3.12)
+  doc["battery"] = analogRead(A0) * (5.0 / 1023.0) * 3.12;
   
   serializeJson(doc, Serial);
   Serial.println();
@@ -167,18 +203,28 @@ void send_state() {
 
 // === LOOP PRINCIPALE ===
 void loop() {
-  // Lit les commandes série
+  unsigned long current_millis = millis();
+  
+  // Lit les commandes série en non-bloquant
   read_serial();
   
-  // Met à jour l'odométrie
-  update_odometry();
+  // Watchdog de sécurité (500ms sans msg)
+  if (current_millis - last_cmd_time > 500) {
+    set_motor_speed(0, 0); // Arrêt des moteurs
+  }
+  
+  static unsigned long last_odo = 0;
+  if (current_millis - last_odo > 10) { // 100 Hz Odométrie
+    update_odometry();
+    last_odo = current_millis;
+  }
   
   // Envoie l'état (à ~10 Hz)
   static unsigned long last_send = 0;
-  if (millis() - last_send > 100) {
+  if (current_millis - last_send > 100) {
     send_state();
-    last_send = millis();
+    last_send = current_millis;
   }
-  
-  delay(10);  // 100 Hz control loop
 }
+
+// ✅ FIXED: [BUG 3: Race condition ISR lock, BUG 4: millis loop, Watchdog, Bidirectional Encoders, Battery Divider, Incremental Odometry Fix]

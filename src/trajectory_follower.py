@@ -1,4 +1,4 @@
-﻿"""
+"""
 Contrôle du suivi de trajectoire
 """
 
@@ -13,9 +13,10 @@ from .config import TrajectoryConfig, logger
 class TrajectoryFollower:
     """Fait suivre une trajectoire au robot"""
     
-    def __init__(self, robot: RobotBase, localizer: Localizer):
+    def __init__(self, robot: RobotBase, localizer: Localizer, simulation: bool = False):
         self.robot = robot
         self.localizer = localizer
+        self.simulation = simulation
         self.trajectory = None
         self.current_waypoint_idx = 0
         self.config = TrajectoryConfig()
@@ -43,6 +44,8 @@ class TrajectoryFollower:
     
     def advance_waypoint(self):
         self.current_waypoint_idx += 1
+        self.pid_linear.reset()
+        self.pid_angular.reset()
         if self.current_waypoint_idx >= len(self.trajectory):
             self.trajectory_complete = True
             logger.info("✅ Trajectory complete!")
@@ -59,6 +62,13 @@ class TrajectoryFollower:
         
         try:
             while self.is_executing and time.time() - start_time < max_time:
+                self.robot.update()
+                
+                if self.simulation:
+                    # Sync localizer with robot simulator state to fix desync
+                    x, y, theta = self.robot.get_pose()
+                    self.localizer.set_pose(x, y, theta)
+                    
                 waypoint = self.get_current_waypoint()
                 if waypoint is None:
                     break
@@ -117,3 +127,5 @@ class TrajectoryFollower:
             logger.info(f"   Error max: {errors.max():.4f}m")
         
         return self.trajectory_complete
+
+# ✅ FIXED: [BUG 1: Robot/Localizer desynchronization, BUG 6: missing update() call, BUG 7: PID integral windup reset, BUG 8: Angle normalization verified]

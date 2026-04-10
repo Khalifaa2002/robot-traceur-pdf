@@ -1,4 +1,4 @@
-﻿"""
+"""
 Contrôleur PID générique
 """
 
@@ -11,12 +11,14 @@ class PIDController:
     
     def __init__(self, kp: float, ki: float, kd: float,
                  output_min: float = -1.0, output_max: float = 1.0,
+                 integral_max: float = 1.0,
                  name: str = "PID"):
         self.kp = kp
         self.ki = ki
         self.kd = kd
         self.output_min = output_min
         self.output_max = output_max
+        self.integral_max = integral_max
         self.name = name
         self.integral = 0.0
         self.prev_error = 0.0
@@ -29,9 +31,7 @@ class PIDController:
         
         p_term = self.kp * error
         self.integral += error * dt
-        self.integral = np.clip(self.integral, 
-                                self.output_min / self.ki if self.ki > 0 else -1e6,
-                                self.output_max / self.ki if self.ki > 0 else 1e6)
+        self.integral = np.clip(self.integral, -self.integral_max, self.integral_max)
         i_term = self.ki * self.integral
         
         if dt > 0:
@@ -77,6 +77,7 @@ def create_linear_controller(config: PIDConfig = None) -> PIDController:
         config.LINEAR_KP,
         config.LINEAR_KI,
         config.LINEAR_KD,
+        integral_max=config.INTEGRAL_MAX,
         name="Linear PID"
     )
 
@@ -89,6 +90,7 @@ def create_angular_controller(config: PIDConfig = None) -> PIDController:
         config.ANGULAR_KP,
         config.ANGULAR_KI,
         config.ANGULAR_KD,
+        integral_max=config.INTEGRAL_MAX,
         name="Angular PID"
     )
 
@@ -101,3 +103,5 @@ if __name__ == "__main__":
         output = pid.update(error, dt=0.01)
     print(f"Final output: {output:.3f}")
     print("✅ PID test complete!")
+    
+    # ✅ FIXED: [BUG 7: PID integral windup division-by-zero risk, safe clip added]
