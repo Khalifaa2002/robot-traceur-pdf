@@ -16,8 +16,8 @@ from pathlib import Path
 if os.environ.get('DISPLAY') is None:
     matplotlib.use('Agg')
 
-def extract_path_from_pdf(pdf_path):
-    """Extrait les points de trajectoire d'un PDF simple"""
+def extract_path_from_pdf(pdf_path, scanned=False, dpi=300):
+    """Extrait les points de trajectoire d'un PDF simple ou scanné"""
     if not os.path.exists(pdf_path):
         print(f"❌ Le fichier {pdf_path} n'existe pas!")
         return None
@@ -30,7 +30,9 @@ def extract_path_from_pdf(pdf_path):
         page = doc[0]
         
         # Convertir en image haute résolution
-        pix = page.get_pixmap(matrix=fitz.Matrix(3, 3))
+        # Matrix scale depends on DPI (72 default)
+        scale = dpi / 72.0
+        pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale))
         img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
         
         print(f"✅ Image extraite: {img.shape}")
@@ -45,21 +47,43 @@ def extract_path_from_pdf(pdf_path):
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         binary = cv2.dilate(binary, kernel, iterations=2)
         
-        # Détecter contours
-        contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        
-        print(f"🔍 {len(contours)} contours trouvés")
-        
-        # Extraire points des plus gros contours
         points = []
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area > 500:  # Filtrer le bruit
-                epsilon = 0.02 * cv2.arcLength(contour, True)
-                approx = cv2.approxPolyDP(contour, epsilon, True)
-                
-                for point in approx:
-                    points.append(point[0])
+        
+        if scanned:
+            print("🔍 Mode scanné activé (Hough Lines fallback)")
+            edges = cv2.Canny(binary, 50, 150, apertureSize=3)
+            lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=50, minLineLength=20, maxLineGap=10)
+            if lines is not None:
+                for line in lines:
+                    x1, y1, x2, y2 = line[0]
+                    points.append([x1, y1])
+                    points.append([x2, y2])
+        else:
+            # Détecter contours
+            contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            
+            print(f"🔍 {len(contours)} contours trouvés")
+            
+            # Extraire points des plus gros contours
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                if area > 500:  # Filtrer le bruit
+                    epsilon = 0.02 * cv2.arcLength(contour, True)
+                    approx = cv2.approxPolyDP(contour, epsilon, True)
+                    
+                    for point in approx:
+                        points.append(point[0])
+                        
+            # Hough fallback if no contours
+            if len(points) == 0:
+                print("⚠️ Aucun contour trouvé, tentative avec Hough Lines...")
+                edges = cv2.Canny(binary, 50, 150, apertureSize=3)
+                lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=50, minLineLength=20, maxLineGap=10)
+                if lines is not None:
+                    for line in lines:
+                        x1, y1, x2, y2 = line[0]
+                        points.append([x1, y1])
+                        points.append([x2, y2])
         
         if points:
             points = np.array(points, dtype=np.float32)

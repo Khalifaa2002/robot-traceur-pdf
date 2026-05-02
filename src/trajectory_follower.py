@@ -119,12 +119,26 @@ class TrajectoryFollower:
             self.is_executing = False
         
         elapsed = time.time() - start_time
+        
+        self.metrics = {
+            "success": self.trajectory_complete,
+            "completion_rate": float(self.current_waypoint_idx / len(self.trajectory)) if self.trajectory is not None and len(self.trajectory) > 0 else 0.0,
+            "time_elapsed_s": float(elapsed),
+            "rms_error_m": 0.0,
+            "max_error_m": 0.0
+        }
+        
         if errors:
             errors = np.array(errors)
+            rms_error = np.sqrt(np.mean(errors**2))
+            self.metrics["rms_error_m"] = float(rms_error)
+            self.metrics["max_error_m"] = float(errors.max())
+            
             logger.info(f"\n📊 Statistics:")
             logger.info(f"   Time: {elapsed:.1f}s")
-            logger.info(f"   Error mean: {errors.mean():.4f}m")
-            logger.info(f"   Error max: {errors.max():.4f}m")
+            logger.info(f"   RMS Error: {rms_error:.4f}m")
+            logger.info(f"   Max Error: {errors.max():.4f}m")
+            logger.info(f"   Completion: {self.metrics['completion_rate']*100:.1f}%")
         
         return self.trajectory_complete
 

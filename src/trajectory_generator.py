@@ -67,6 +67,28 @@ def add_orientation(points):
     
     return points_with_angle
 
+def apply_tool_offset(points_with_angle, offset_x=0.0, offset_y=0.0):
+    """
+    Modifie la trajectoire du centre du robot pour que l'outil (décalé de offset_x, offset_y)
+    suive la trajectoire originale.
+    """
+    if offset_x == 0.0 and offset_y == 0.0:
+        return points_with_angle
+        
+    offset_points = np.copy(points_with_angle)
+    
+    # Vectorized computation
+    theta = points_with_angle[:, 2]
+    
+    dx_world = offset_x * np.cos(theta) - offset_y * np.sin(theta)
+    dy_world = offset_x * np.sin(theta) + offset_y * np.cos(theta)
+    
+    offset_points[:, 0] -= dx_world
+    offset_points[:, 1] -= dy_world
+    
+    return offset_points
+
+
 def visualize_trajectory(original_points, smooth_points, world_points, points_with_angle):
     """Visualise les trajectoires"""
     fig, axes = plt.subplots(2, 2, figsize=(14, 12))

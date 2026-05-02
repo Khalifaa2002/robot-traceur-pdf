@@ -129,8 +129,8 @@ class RobotFactory:
     """Crée le bon type de robot"""
     
     @staticmethod
-    def create_robot(mode: str = "simulator") -> RobotBase:
-        if mode == "simulator":
+    def create_robot(mode: str = "simulation") -> RobotBase:
+        if mode in ("simulator", "simulation"):
             logger.info("🎮 Creating RobotSimulator")
             return RobotSimulator()
         elif mode == "serial":
