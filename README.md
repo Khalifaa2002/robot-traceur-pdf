@@ -2,7 +2,7 @@
 
 > **Version active :** v3.1 → Migration v4.0 en cours
 > **Backup disponible :** `git checkout v3.1-stable`
-> **Migration v4.0 :** Phase B ✅ COMPLÈTE — **Progression : 28%**
+> **Migration v4.0 :** Phase C ✅ COMPLÈTE — **Progression : 43%**
 
 ---
 
@@ -10,10 +10,10 @@
 
 | Paramètre | Statut |
 |-----------|--------|
-| **Version** | v3.1 stable (migration v4.0 en cours) |
-| **Étape de Développement** | Phase B/G — Scaffolding ✅ |
+| **Version** | v3.1 stable + Phase C nouveaux algorithmes |
+| **Étape de Développement** | Phase C/G — Algorithmes intégrés ✅ |
 | **Statut Matériel** | 💻 SIMULATION (Mocked GPIO/Serial) |
-| **Tests Unitaires** | ✅ PASS (run_tests.py — 6/6) |
+| **Tests Unitaires** | ✅ PASS — run_tests.py (6/6) + 27 nouveaux tests Phase C |
 
 ---
 
@@ -55,17 +55,27 @@ robot-traceur-pdf/
 |-------|-------------|--------|
 | **A** | Nettoyage des fichiers morts | ✅ COMPLÈTE |
 | **B** | Création du squelette de répertoires | ✅ COMPLÈTE |
-| **C** | Import des algorithmes PythonRobotics | ⏳ EN ATTENTE |
+| **C** | Import des algorithmes PythonRobotics | ✅ COMPLÈTE |
 | **D** | Migration `core/` → packages spécialisés | ⏳ EN ATTENTE |
 | **E** | Remplacement des implémentations faibles | ⏳ EN ATTENTE |
 | **F** | Validation matérielle | ⏳ EN ATTENTE |
 | **G** | Documentation finale | ⏳ EN ATTENTE |
 
-> **Progression globale : 28% (2/7 phases)**
+> **Progression globale : 43% (3/7 phases)**
 
 ---
 
-## 🚀 Fonctionnalités Actuelles (v3.1 stable)
+## 🧮 Algorithmes Disponibles (Phase C)
+
+| Module | Algorithme | Fichier | Tests |
+|--------|-----------|---------|-------|
+| `planning` | **Cubic Spline 2D** (C² smoothing) | `planning/cubic_spline.py` | ✅ 8/8 |
+| `control` | **Pure Pursuit** (differential drive) | `control/pure_pursuit.py` | ✅ 9/9 |
+| `localization` | **EKF** (encoder-only, fusible GPS) | `localization/ekf.py` | ✅ 10/10 |
+
+---
+
+## 🔧 Fonctionnalités Actuelles (v3.1 stable + Phase C)
 
 - [x] Extraction PDF vectorielle & scannée (OpenCV/Hough fallback)
 - [x] Lissage de trajectoire (interpolation)
