@@ -4,7 +4,7 @@ Localisation du robot (odométrie)
 
 import numpy as np
 from typing import Tuple
-from .config import RobotConfig, logger
+from utils.config import RobotConfig, logger
 
 class Localizer:
     """Estime la position du robot"""
@@ -26,32 +26,40 @@ class Localizer:
         logger.info(f"   PPR: {config.PPR}")
     
     def update(self, encoder_left: int, encoder_right: int):
-        """Met à jour la position
+        """Met à jour la position avec support du recul et filtrage de bruit.
         
         Args:
             encoder_left: Valeur CUMULÉE (absolue) de l'encodeur gauche
             encoder_right: Valeur CUMULÉE (absolue) de l'encodeur droit
         """
         
-        # Handle encoder overflow or hardware reset
-        if encoder_left < self.last_encoder_left or encoder_right < self.last_encoder_right:
-            logger.warning("Encoder values decreased! Assuming reset/overflow.")
+        delta_left = encoder_left - self.last_encoder_left
+        delta_right = encoder_right - self.last_encoder_right
+        
+        # Détection de reset matériel ou overflow (saut massif > 50000 ticks)
+        # On ignore le delta si un saut anormal est détecté pour éviter une dérive violente
+        OVERFLOW_THRESHOLD = 50000
+        if abs(delta_left) > OVERFLOW_THRESHOLD or abs(delta_right) > OVERFLOW_THRESHOLD:
+            logger.warning(f"⚠️ Saut d'encodeur détecté (L:{delta_left}, R:{delta_right}). Reset des compteurs.")
             self.last_encoder_left = encoder_left
             self.last_encoder_right = encoder_right
             return
 
-        delta_left = encoder_left - self.last_encoder_left
-        delta_right = encoder_right - self.last_encoder_right
-        
-        self.last_encoder_left = encoder_left
-        self.last_encoder_right = encoder_right
+        # Filtrage de bruit : ignorer les micro-oscillations (jitter matériel)
+        # Utile sur Raspberry Pi avec des interruptions GPIO bruitées
+        NOISE_THRESHOLD = 0.1 # On peut ajuster ce seuil (en ticks ou m)
+        if abs(delta_left) < NOISE_THRESHOLD: delta_left = 0
+        if abs(delta_right) < NOISE_THRESHOLD: delta_right = 0
         
         if delta_left == 0 and delta_right == 0:
             return
+            
+        self.last_encoder_left = encoder_left
+        self.last_encoder_right = encoder_right
         
         perimeter = np.pi * self.config.WHEEL_DIAMETER
-        dist_left = delta_left / self.config.PPR * perimeter
-        dist_right = delta_right / self.config.PPR * perimeter
+        dist_left = (delta_left / self.config.PPR) * perimeter
+        dist_right = (delta_right / self.config.PPR) * perimeter
         
         dist_avg = (dist_left + dist_right) / 2.0
         delta_theta = (dist_right - dist_left) / self.config.WHEEL_BASE

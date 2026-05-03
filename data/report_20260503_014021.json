@@ -1,0 +1,20 @@
+{
+    "timestamp": "2026-05-03T01:40:21.869596",
+    "file": "plan_square.pdf",
+    "metrics": {
+        "success": false,
+        "completion_rate": 0.01,
+        "time_elapsed_s": 24.90877866744995,
+        "rms_error_m": 0.02832574403196976,
+        "max_error_m": 0.08835882551660644
+    },
+    "config": {
+        "mode": "simulation",
+        "controller": "pid",
+        "scanned": false,
+        "tool_offset": [
+            0.0,
+            0.0
+        ]
+    }
+}

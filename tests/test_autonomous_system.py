@@ -13,11 +13,11 @@ from pathlib import Path
 # Ajoute src au path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.sensors import UltrasonicSensor, IMUSensor, SensorFusion
-from src.mapping import OccupancyGrid
-from src.localization import EKFLocalizer, ParticleFilter
-from src.planning import AStarPlanner, SimpleObstacleAvoidance
-from src.control import MotorController, PIDController, ControlLoop
+from core.sensors import UltrasonicSensor, IMUSensor, SensorFusion
+from core.mapping import OccupancyGrid
+from core.localization import EKFLocalizer, ParticleFilter
+from core.planning import AStarPlanner, SimpleObstacleAvoidance
+from core.control import MotorController, PIDController, ControlLoop
 
 
 class TestUltrasonicSensor(unittest.TestCase):

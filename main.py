@@ -8,12 +8,13 @@ import threading
 import time
 from pathlib import Path
 
-from src.config import RobotConfig, logger
-from src.pdf_extractor import extract_path_from_pdf, visualize_path
-from src.trajectory_generator import smooth_trajectory, pixel_to_world, add_orientation, apply_tool_offset, save_trajectory
-from src.robot_interface import RobotFactory
-from src.localizer import Localizer
-from src.trajectory_follower import TrajectoryFollower
+from utils.config import RobotConfig
+from utils.logger import logger
+from core.pdf_extractor import extract_path_from_pdf, visualize_path
+from core.trajectory_generator import smooth_trajectory, pixel_to_world, add_orientation, apply_tool_offset, save_trajectory
+from core.hardware import RobotFactory
+from core.localization import Localizer
+from core.controller import TrajectoryFollower
 import json
 from datetime import datetime
 

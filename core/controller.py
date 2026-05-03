@@ -1,14 +1,103 @@
-"""
-Contrôle du suivi de trajectoire
-"""
-
 import numpy as np
 import time
-from typing import List, Tuple, Optional
-from .robot_base import RobotBase
-from .localizer import Localizer
-from .pid_controller import create_linear_controller, create_angular_controller
-from .config import TrajectoryConfig, logger
+from typing import Optional, Tuple, List
+
+from utils.config import PIDConfig, TrajectoryConfig
+from utils.logger import logger
+from .hardware import RobotBase
+from .localization import Localizer
+
+# ==================== PID CONTROLLER ====================
+
+class PIDController:
+    """Contrôleur PID"""
+    
+    def __init__(self, kp: float, ki: float, kd: float,
+                 output_min: float = -1.0, output_max: float = 1.0,
+                 integral_max: float = 1.0,
+                 name: str = "PID"):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.output_min = output_min
+        self.output_max = output_max
+        self.integral_max = integral_max
+        self.name = name
+        self.integral = 0.0
+        self.prev_error = 0.0
+        self.prev_time = 0.0
+        
+        logger.info(f"🔧 PIDController '{name}' initialized (Kp={kp}, Ki={ki}, Kd={kd})")
+    
+    def update(self, error: float, dt: float = 0.01) -> float:
+        """Calcule la correction PID"""
+        
+        p_term = self.kp * error
+        self.integral += error * dt
+        self.integral = np.clip(self.integral, -self.integral_max, self.integral_max)
+        i_term = self.ki * self.integral
+        
+        if dt > 0:
+            derivative = (error - self.prev_error) / dt
+        else:
+            derivative = 0
+        d_term = self.kd * derivative
+        
+        output = p_term + i_term + d_term
+        output = np.clip(output, self.output_min, self.output_max)
+        
+        self.prev_error = error
+        self.prev_time += dt
+        
+        return output
+    
+    def reset(self):
+        """Réinitialise"""
+        self.integral = 0.0
+        self.prev_error = 0.0
+        logger.debug(f"🔄 PIDController '{self.name}' reset")
+    
+    def set_gains(self, kp: float, ki: float, kd: float):
+        """Change les gains"""
+        logger.info(f"📊 PIDController '{self.name}' gains updated:")
+        logger.info(f"   Kp: {self.kp:.3f} → {kp:.3f}")
+        logger.info(f"   Ki: {self.ki:.3f} → {ki:.3f}")
+        logger.info(f"   Kd: {self.kd:.3f} → {kd:.3f}")
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+    
+    def __repr__(self) -> str:
+        return (f"PIDController({self.name}, "
+                f"Kp={self.kp:.3f}, Ki={self.ki:.3f}, Kd={self.kd:.3f})")
+
+
+def create_linear_controller(config: PIDConfig = None) -> PIDController:
+    """Crée un PID pour le contrôle linéaire"""
+    if config is None:
+        config = PIDConfig()
+    return PIDController(
+        config.LINEAR_KP,
+        config.LINEAR_KI,
+        config.LINEAR_KD,
+        integral_max=config.INTEGRAL_MAX,
+        name="Linear PID"
+    )
+
+
+def create_angular_controller(config: PIDConfig = None) -> PIDController:
+    """Crée un PID pour le contrôle angulaire"""
+    if config is None:
+        config = PIDConfig()
+    return PIDController(
+        config.ANGULAR_KP,
+        config.ANGULAR_KI,
+        config.ANGULAR_KD,
+        integral_max=config.INTEGRAL_MAX,
+        name="Angular PID"
+    )
+
+# ==================== TRAJECTORY FOLLOWER ====================
 
 class TrajectoryFollower:
     """Fait suivre une trajectoire au robot"""
@@ -86,9 +175,18 @@ class TrajectoryFollower:
                 
                 errors.append(dist_error)
                 
+                # 1. Calcul des commandes PID de base
                 v_cmd = self.pid_linear.update(dist_error, dt=0.01)
                 omega_cmd = self.pid_angular.update(angle_error, dt=0.01)
                 
+                # 2. Adaptive Velocity Scaling (Stabilité accrue)
+                # On réduit la vitesse linéaire si l'erreur angulaire est importante.
+                # Si le robot n'est pas aligné, il doit d'abord pivoter avant de foncer.
+                # Facteur d'atténuation : 1.0 si aligné, 0.0 si à 90° ou plus.
+                v_scale = max(0.0, 1.0 - abs(angle_error) / (np.pi / 2))
+                v_cmd *= v_scale
+                
+                # 3. Saturation des commandes
                 v_cmd = np.clip(v_cmd, -max_velocity, max_velocity)
                 omega_cmd = np.clip(omega_cmd, -1.0, 1.0)
                 
@@ -141,5 +239,3 @@ class TrajectoryFollower:
             logger.info(f"   Completion: {self.metrics['completion_rate']*100:.1f}%")
         
         return self.trajectory_complete
-
-# ✅ FIXED: [BUG 1: Robot/Localizer desynchronization, BUG 6: missing update() call, BUG 7: PID integral windup reset, BUG 8: Angle normalization verified]

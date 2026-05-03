@@ -7,6 +7,9 @@ import platform
 import numpy as np
 from pathlib import Path
 
+# Importer le logger pour l'utiliser dans la configuration si nécessaire
+from .logger import logger
+
 # ==================== ENVIRONMENT FLAGS ====================
 IS_RASPBERRY_PI = platform.machine() in ['armv7l', 'aarch64']
 IS_HEADLESS = os.environ.get('DISPLAY') is None
@@ -25,7 +28,7 @@ for directory in [PLANS_DIR, TRAJECTORIES_DIR]:
 class RobotConfig:
     WHEEL_DIAMETER = 0.065
     WHEEL_BASE = 0.150
-    PPR = 20.0
+    PPR = 32.0
     MAX_LINEAR_VELOCITY = 0.5
     MAX_ANGULAR_VELOCITY = 1.0
     SERIAL_PORT = "COM3" if platform.system() == "Windows" else "/dev/ttyACM0"
@@ -64,20 +67,6 @@ class PDFConfig:
     DILATE_ITERATIONS = 2
     ERODE_ITERATIONS = 1
 
-# ==================== LOGGING ====================
-import logging
-
-def setup_logger(name: str, level=logging.INFO):
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    return logger
-
-logger = setup_logger("robot-traceur")
-
 # ==================== TESTS ====================
 class TestConfig:
     COMMUNICATION_TIMEOUT = 5.0
@@ -107,5 +96,3 @@ if __name__ == "__main__":
     print(f"   Headless: {IS_HEADLESS}")
     print(f"   Serial: {RobotConfig.SERIAL_PORT}")
     print("✅ Configuration loaded!")
-    
-    # ✅ FIXED: [RPI-1: Serial port path, RPI-5: Auto-detect running environment]

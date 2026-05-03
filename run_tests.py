@@ -18,23 +18,17 @@ if __name__ == "__main__":
     print("-"*60)
     
     try:
-        from src.config import RobotConfig, TrajectoryConfig, PIDConfig, logger
+        from utils.config import RobotConfig, TrajectoryConfig, PIDConfig, logger
         print("  ✅ config imported")
         
-        from src.robot_base import RobotBase, RobotSimulator
-        print("  ✅ robot_base imported")
+        from core.hardware import RobotBase, RobotSimulator, RobotFactory, SerialRobotInterface, RPiGPIOInterface
+        print("  ✅ hardware imported")
         
-        from src.localizer import Localizer
+        from core.localization import Localizer
         print("  ✅ localizer imported")
         
-        from src.pid_controller import PIDController, create_linear_controller
-        print("  ✅ pid_controller imported")
-        
-        from src.robot_interface import RobotFactory, SerialRobotInterface
-        print("  ✅ robot_interface imported")
-        
-        from src.trajectory_follower import TrajectoryFollower
-        print("  ✅ trajectory_follower imported")
+        from core.controller import PIDController, create_linear_controller, TrajectoryFollower
+        print("  ✅ controller imported")
         
         print("\n✅ All imports successful!")
         
@@ -175,8 +169,8 @@ if __name__ == "__main__":
     print("-"*60)
     
     try:
-        from src.rpi_gpio_interface import RPiGPIOInterface
-        print("  ✅ rpi_gpio_interface imported")
+        from core.hardware import RPiGPIOInterface
+        print("  ✅ RPiGPIOInterface imported")
         
         gpio_robot = RPiGPIOInterface()
         print("  ✅ RPiGPIOInterface instanciated")
