@@ -1,4 +1,8 @@
-# 🤖 Robot Traceur de Plan PDF (v3.1 Stabilization)
+# 🤖 Robot Traceur de Plan PDF
+
+> **Version active :** v3.1 → Migration v4.0 en cours  
+> **Backup disponible :** `git checkout v3.1-stable`  
+> **Dernière milestone :** Phase A (Cleanup) ✅ COMPLÈTE
 
 Un robot autonome de précision conçu pour tracer des plans PDF sur le terrain avec un système avancé de correction en temps réel et un firmware optimisé pour Raspberry Pi.
 
