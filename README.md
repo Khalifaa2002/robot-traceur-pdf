@@ -1,10 +1,8 @@
 # 🤖 Robot Traceur de Plan PDF
 
-> **Version active :** v3.1 → Migration v4.0 en cours  
-> **Backup disponible :** `git checkout v3.1-stable`  
-> **Dernière milestone :** Phase A (Cleanup) ✅ COMPLÈTE
-
-Un robot autonome de précision conçu pour tracer des plans PDF sur le terrain avec un système avancé de correction en temps réel et un firmware optimisé pour Raspberry Pi.
+> **Version active :** v3.1 → Migration v4.0 en cours
+> **Backup disponible :** `git checkout v3.1-stable`
+> **Migration v4.0 :** Phase B ✅ COMPLÈTE — **Progression : 28%**
 
 ---
 
@@ -12,82 +10,135 @@ Un robot autonome de précision conçu pour tracer des plans PDF sur le terrain 
 
 | Paramètre | Statut |
 |-----------|--------|
-| **Étape de Développement** | v3.1 - Phase de Stabilisation |
+| **Version** | v3.1 stable (migration v4.0 en cours) |
+| **Étape de Développement** | Phase B/G — Scaffolding ✅ |
 | **Statut Matériel** | 💻 SIMULATION (Mocked GPIO/Serial) |
-| **Tests Unitaires** | ✅ PASS (run_tests.py) |
-| **Précision Trajectoire** | 📈 Améliorée (Adaptive Velocity Scaling) |
-| **Fiabilité Odométrie** | 🛠️ Corrigée (Support du recul & Filtrage) |
+| **Tests Unitaires** | ✅ PASS (run_tests.py — 6/6) |
 
 ---
 
-## 🏗️ Architecture du Système
+## 🏗️ Architecture v4.0 (En cours de migration)
 
-Le système repose sur une architecture modulaire stricte garantissant la portabilité entre simulation et matériel réel.
-
-- **`core/`** : Logique métier (Contrôleur PID adaptatif, HAL matériel, Extracteur PDF OpenCV).
-- **`utils/`** : Gestion de la configuration globale et logging industriel.
-- **`data/`** : Stockage des plans PDF et des trajectoires générées.
-
----
-
-## 🚀 Fonctionnalités Implémentées
-
-- [x] **Extraction PDF Vectorielle & Scannée** (OpenCV/Hough fallback).
-- [x] **Lissage de Trajectoire Spline** (Cubic interpolation).
-- [x] **Odométrie Différentielle Robuste** : Gestion des overflows, resets et support de la marche arrière.
-- [x] **Contrôle PID Adaptatif** : Réduction automatique de la vitesse en virage pour minimiser le glissement.
-- [x] **Compensation d'Outil (Tool Offset)** : Correction vectorielle de la position de la pointe.
-- [x] **Rapports de Validation JSON** : Métriques RMS et Max Error post-mission.
-
----
-
-## 🛠️ Historique des Versions (Versioning)
-
-- **v3.0** : Unification de l'architecture (`core/` & `utils/`). Nettoyage complet du dépôt.
-- **v3.1 (Actuelle)** : **Phase de Stabilisation**.
-    - Amélioration de l'odométrie (support des encodeurs quadrature en recul).
-    - Ajout de l'Adaptive Velocity Scaling dans le contrôleur.
-    - Mise à jour des paramètres hardware par défaut (PPR=32).
-    - Intégration du filtrage de bruit sur les signaux d'encodeurs.
-
----
-
-## ⚠️ Limitations Connues & Prochaines Améliorations
-
-### Limitations
-- Absence de fusion de capteurs (IMU/GPS) pour corriger la dérive odométrique sur longue distance.
-- Sensibilité au glissement excessif sur surfaces lisses (compensation logicielle en cours).
-
-### Améliorations Prévues
-- [ ] Intégration d'un filtre de Kalman (EKF) pour la fusion IMU/Odométrie.
-- [ ] Optimisation de la performance OpenCV pour les gros fichiers PDF sur Raspberry Pi Zero.
-- [ ] Implémentation d'un évitement d'obstacles dynamique (DWA).
-
----
-
-## ▶️ Utilisation du CLI (Latest Usage)
-
-```bash
-# Lancer la simulation avec validation des performances
-python -X utf8 main.py --mode simulation --pdf data/plan_square.pdf --validate
+```
+robot-traceur-pdf/
+│
+├── app/              ← [SCAFFOLD] Orchestration (CLI, mission)
+├── control/          ← [SCAFFOLD] Contrôleurs (PID, Pure Pursuit)
+├── planning/         ← [SCAFFOLD] Planification (Spline, DWA)
+├── localization/     ← [SCAFFOLD] Localisation (Odometry, EKF)
+├── perception/       ← [SCAFFOLD] Perception (PDF extraction)
+├── telemetry/        ← [SCAFFOLD] Télémétrie (Métriques, rapports)
+│
+├── core/             ← [STABLE v3.1] Logique actuelle (EN ATTENTE phase D)
+│   ├── controller.py
+│   ├── hardware.py
+│   ├── localization.py
+│   ├── pdf_extractor.py
+│   └── trajectory_generator.py
+│
+├── utils/            ← [STABLE] Config + Logger (inchangé)
+├── hardware/         ← [EXISTANT] placeholder
+├── tests/            ← [STABLE] Suite de tests complète
+├── scripts/          ← [STABLE] Déploiement Raspberry Pi
+├── data/             ← [STABLE] Plans PDF et trajectoires
+│
+├── main.py           ← [STABLE] Point d'entrée CLI
+├── run_tests.py      ← [STABLE] Lanceur de tests
+└── microcontroller_code.ino  ← [NE PAS TOUCHER]
 ```
 
-**Options disponibles :**
-- `--mode [simulation|serial|gpio]` : Interface robot.
-- `--pdf <path>` : Fichier source.
-- `--tool-offset-x/y <meters>` : Décalage physique de l'outil.
-- `--scanned` : Mode extraction OpenCV pour PDF non-vectoriels.
-- `--no-plot` : Mode headless pour Raspberry Pi.
+---
+
+## 📈 Progression de la Migration v4.0
+
+| Phase | Description | Statut |
+|-------|-------------|--------|
+| **A** | Nettoyage des fichiers morts | ✅ COMPLÈTE |
+| **B** | Création du squelette de répertoires | ✅ COMPLÈTE |
+| **C** | Import des algorithmes PythonRobotics | ⏳ EN ATTENTE |
+| **D** | Migration `core/` → packages spécialisés | ⏳ EN ATTENTE |
+| **E** | Remplacement des implémentations faibles | ⏳ EN ATTENTE |
+| **F** | Validation matérielle | ⏳ EN ATTENTE |
+| **G** | Documentation finale | ⏳ EN ATTENTE |
+
+> **Progression globale : 28% (2/7 phases)**
 
 ---
 
-## 🧪 Statut des Tests
+## 🚀 Fonctionnalités Actuelles (v3.1 stable)
 
-| Test | Résultat | Date |
-|------|----------|------|
-| `run_tests.py` | ✅ PASS | 2026-05-02 |
-| `test_production_features.py` | ✅ PASS | 2026-05-02 |
-| Simulation E2E (Square) | 🔄 EN COURS | 2026-05-02 |
+- [x] Extraction PDF vectorielle & scannée (OpenCV/Hough fallback)
+- [x] Lissage de trajectoire (interpolation)
+- [x] Odométrie différentielle robuste (encodeurs quadrature, support recul)
+- [x] Contrôle PID adaptatif (Adaptive Velocity Scaling)
+- [x] Compensation d'outil (Tool Offset vectoriel)
+- [x] HAL multi-plateforme (Simulation / Serial / GPIO)
+- [x] Rapports de validation JSON (RMS, Max Error)
+
+---
+
+## 🔜 Prochaines fonctionnalités (Phase C)
+
+- [ ] **Pure Pursuit** — Meilleur suivi en virage (adapté depuis PythonRobotics)
+- [ ] **Cubic Spline** — Lissage C² supérieur à l'interpolation linéaire actuelle
+- [ ] **EKF** — Réduction de la dérive odométrique (sans GPS)
+
+---
+
+## ▶️ Utilisation du CLI
+
+```bash
+# Simulation avec validation
+python -X utf8 main.py --mode simulation --pdf data/plan_square.pdf --validate
+
+# Raspberry Pi (GPIO)
+python main.py --mode gpio --pdf data/plan.pdf --no-plot
+
+# Arduino (Serial)
+python main.py --mode serial --port /dev/ttyACM0 --pdf data/plan.pdf
+```
+
+**Options CLI disponibles :**
+| Flag | Description |
+|------|-------------|
+| `--mode [simulation\|serial\|gpio]` | Interface robot |
+| `--pdf <path>` | Fichier source PDF |
+| `--controller [pid\|pure_pursuit]` | Algorithme de contrôle *(pure_pursuit en Phase C)* |
+| `--tool-offset-x/y <m>` | Décalage physique de l'outil |
+| `--scanned` | Mode extraction OpenCV pour PDF non-vectoriels |
+| `--no-plot` | Mode headless pour Raspberry Pi |
+| `--validate` | Génère un rapport JSON de précision |
+| `--dpi <int>` | DPI de rastérisation PDF (défaut: 300) |
+
+---
+
+## 🧪 Commandes de Test
+
+```bash
+# Suite principale (recommandé)
+python -X utf8 run_tests.py
+
+# Via pytest avec couverture
+pytest tests/ -v --tb=short
+```
+
+---
+
+## 🔁 Rollback
+
+```bash
+# Revenir à l'état v3.1 stable à tout moment
+git checkout v3.1-stable
+```
+
+---
+
+## 🗺️ Roadmap
+
+- **v4.0** *(en cours)* — Architecture modulaire + Pure Pursuit + Cubic Spline + EKF
+- **v4.1** — Wizard de calibration, évitement DWA, watchdog
+- **v4.2** — Dashboard web temps réel, API REST, mobile
+- **v5.0** — SLAM, flotte multi-robots, optimisation IA, cloud
 
 ---
 
