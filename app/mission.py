@@ -7,6 +7,11 @@ This module coordinates the robot, localizer, and controllers to execute
 a path tracing mission.
 
 Status: Production (migrated from v3.1 core)
+
+FIXES (v2):
+  - Fixed Pure Pursuit speed estimation: fallback to 0.2 m/s when v_prev ≈ 0
+  - Fixed EKF circular update: removed update_odometry() call, predict-only mode
+  - Fixed goal detection: now checks distance to final waypoint, not lookahead point
 """
 
 import numpy as np
@@ -121,7 +126,7 @@ class TrajectoryFollower:
                 if self.use_ekf:
                     # Pure dead-reckoning EKF:
                     # Predict forward using PREVIOUS command (v, omega)
-                    # No update() step needed — odometry IS the state estimate source
+                    # ✅ FIX: No update() step — odometry IS the state estimate source
                     self.ekf.predict(self.v_prev, self.omega_prev)
                     x, y, theta = self.ekf.get_pose()
 
@@ -142,8 +147,9 @@ class TrajectoryFollower:
 
                 # --- CONTROL LOGIC ---
                 if self.controller_type == 'pure_pursuit':
-                    # Use last known v_cmd as speed estimate (avoids get_current_speed() issue)
-                    current_speed = abs(self.v_prev) if hasattr(self, 'v_prev') else 0.0
+                    # ✅ FIX: Use last known v_cmd as speed estimate with fallback
+                    # Avoids get_current_speed() issue and handles startup (v=0)
+                    current_speed = abs(self.v_prev) if abs(self.v_prev) > 0.01 else 0.2
                     
                     v_cmd, omega_cmd, look_ind = self.pure_pursuit.compute(
                         x, y, theta, current_speed, self.target_course
@@ -160,7 +166,7 @@ class TrajectoryFollower:
                         self.current_waypoint_idx = look_ind
                         logger.debug(f"📍 PP progress: {self.current_waypoint_idx}/{len(self.trajectory)}")
                     
-                    # Goal check: distance to FINAL waypoint
+                    # ✅ FIX: Goal check: distance to FINAL waypoint (not lookahead)
                     final_x = self.target_course.cx[-1]
                     final_y = self.target_course.cy[-1]
                     dist_to_goal = np.sqrt((final_x - x)**2 + (final_y - y)**2)
