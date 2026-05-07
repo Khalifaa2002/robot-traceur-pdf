@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.trajectory_generator import apply_tool_offset
+from planning.trajectory_generator import apply_tool_offset
 
 class TestProductionFeatures(unittest.TestCase):
     def test_tool_offset_x(self):

@@ -48,7 +48,8 @@ _DEFAULT_Q = np.diag([
 _DEFAULT_R = np.diag([0.3, 0.3]) ** 2
 
 
-class EKFLocalizer:
+class EKF:
+
     """
     Extended Kalman Filter localizer for a differential drive robot.
 
@@ -141,6 +142,14 @@ class EKFLocalizer:
             math.cos(self.x_est[2, 0])
         )
         self.P_est = (np.eye(3) - K @ jH) @ self.P_est
+
+    def update_odometry(self, x: float, y: float, theta: float):
+        """
+        Wrapper to update EKF with odometry observation.
+        """
+        z = np.array([[x], [y]])
+        self.update(z)
+
 
     def get_pose(self):
         """

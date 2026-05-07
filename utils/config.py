@@ -59,6 +59,28 @@ class PIDConfig:
     OUTPUT_MIN = -1.0
     OUTPUT_MAX = 1.0
 
+# ==================== PURE PURSUIT PARAMETERS ====================
+class PurePursuitConfig:
+    LFC = 0.1  # [m] Look-ahead distance
+    KP = 0.1   # Speed proportional gain
+    WB = RobotConfig.WHEEL_BASE  # [m] wheel base
+    DT = 0.1   # [s] time tick
+    V_MAX = 0.3  # [m/s] max linear velocity
+    W_MAX = 1.0  # [rad/s] max angular velocity
+
+# ==================== EKF PARAMETERS ====================
+class EKFConfig:
+    Q = np.diag([
+        0.1,  # variance of location on x-axis
+        0.1,  # variance of location on y-axis
+        np.deg2rad(1.0),  # variance of yaw angle
+        1.0,  # variance of velocity
+        np.deg2rad(1.0)   # variance of yaw rate
+    ]) ** 2  # predict state covariance
+    
+    R = np.diag([1.0, 1.0]) ** 2  # Observation x,y covariance
+
+
 # ==================== PDF EXTRACTION ====================
 class PDFConfig:
     MIN_CONTOUR_AREA = 500

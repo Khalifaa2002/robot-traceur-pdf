@@ -181,17 +181,17 @@ class PurePursuitController:
         # Normalize to [-pi, pi]
         alpha = math.atan2(math.sin(alpha), math.cos(alpha))
 
+        # Linear velocity: attenuate on sharp turns (same as adaptive scaling in PID)
+        v_scale = max(0.1, 1.0 - abs(alpha) / (math.pi / 2))
+        v_cmd = target_speed * v_scale
+
         # Pure pursuit curvature: kappa = 2 * sin(alpha) / L_d
         # For differential drive: omega = v * kappa
         if L_d < 1e-6:
             omega_cmd = 0.0
         else:
             kappa = 2.0 * math.sin(alpha) / L_d
-            omega_cmd = target_speed * kappa
-
-        # Linear velocity: attenuate on sharp turns (same as adaptive scaling in PID)
-        v_scale = max(0.1, 1.0 - abs(alpha) / (math.pi / 2))
-        v_cmd = target_speed * v_scale
+            omega_cmd = v_cmd * kappa
 
         # Saturate
         v_cmd = float(np.clip(v_cmd, 0.0, self.max_v))

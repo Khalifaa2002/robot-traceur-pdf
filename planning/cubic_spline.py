@@ -83,6 +83,7 @@ class CubicSpline1D:
         if x < self.x[0] or x > self.x[-1]:
             return None
         i = self._search_index(x)
+        i = min(i, self.nx - 2)
         dx = x - self.x[i]
         return self.b[i] + 2.0 * self.c[i] * dx + 3.0 * self.d[i] * dx**2
 
@@ -91,6 +92,7 @@ class CubicSpline1D:
         if x < self.x[0] or x > self.x[-1]:
             return None
         i = self._search_index(x)
+        i = min(i, self.nx - 2)
         dx = x - self.x[i]
         return 2.0 * self.c[i] + 6.0 * self.d[i] * dx
 
