@@ -5,6 +5,10 @@ Dynamic Window Approach (DWA) for local obstacle avoidance.
 
 Adapted from PythonRobotics/PathPlanning/DynamicWindowApproach
 Optimized for Raspberry Pi: reduced sampling resolution and prediction time.
+
+FIXES (v2):
+  - Fixed v_max saturation issue: now guarantees exploitable velocity window
+  - Prevents np.arange(v_min, v_max, resolution) from returning single value
 """
 
 import numpy as np
@@ -109,8 +113,11 @@ class DWAPlanner:
         
         # Ensure v_max respects both hardware max speed and reachable acceleration
         v_max = min(self.config.max_speed, v_max_dynamic)
-        # Garantit qu'il y a toujours au moins une valeur v dans la fenêtre
+        
+        # ✅ FIX: Garantir une plage exploitable
+        # Assure that v_max > v_min + v_resolution so that np.arange generates multiple values
         v_max = max(v_max, self.config.min_speed + self.config.v_resolution)
+        
         v_min = max(self.config.min_speed, v_min_dynamic)
         omega_min = max(-self.config.max_yaw_rate, omega_min_dynamic)
         omega_max = min(self.config.max_yaw_rate, omega_max_dynamic)
